@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjana OPR Dinamik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* BAHAGIAN BORANG (KIRI) */
+        .form-container {
+            width: 35%;
+            padding: 20px;
+            background-color: #fff;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .form-container h2 { margin-top: 0; color: #1e3a8a; font-weight: 700; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #475569;}
+        input[type="text"], input[type="date"], textarea, select {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;
+            font-family: 'Poppins', sans-serif; font-size: 13px;
+        }
+        
+        /* DRAG AND DROP STYLES */
+        .file-inputs {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 15px 5px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .drop-zone:hover {
+            background-color: #e2e8f0;
+            border-color: #94a3b8;
+        }
+        .drop-zone.dragover {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .drop-zone span {
+            font-size: 11px;
+            color: #64748b;
+            pointer-events: none;
+        }
+        .hidden-input {
+            display: none;
+        }
+        
+        .btn-print {
+            display: block; width: 100%; padding: 15px; background-color: #2563eb; color: white;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 20px; margin-bottom: 30px; letter-spacing: 1px;
+        }
+        .btn-print:hover { background-color: #1e40af; }
+
+        /* BAHAGIAN PREVIEW OPR (KANAN) */
+        .preview-container {
+            width: 65%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #475569;
+        }
+
+        /* REKA BENTUK KERTAS A4 */
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            padding: 15mm;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* BENTUK GEOMETRI - TEMA BIRU */
+        .shape-top-left {
+            position: absolute; top: 0; left: 0; width: 150px; height: 150px;
+            background-color: #1e3a8a;
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+        }
+        .shape-top-left-2 {
+            position: absolute; top: 0; left: 0; width: 180px; height: 100px;
+            background-color: #3b82f6;
+            clip-path: polygon(0 0, 100% 0, 40% 100%, 0 100%);
+            z-index: 1;
+        }
+        .shape-bottom-right {
+            position: absolute; bottom: 0; right: 0; width: 200px; height: 200px;
+            background-color: #1e3a8a;
+            clip-path: polygon(100% 100%, 0 100%, 100% 0);
+        }
+
+        /* HEADER */
+        .header-top { text-align: right; font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px; z-index: 2; position: relative;}
+        .logo-section { display: flex; justify-content: center; align-items: center; margin-bottom: 10px; z-index: 2; position: relative; }
+        .logo-section img { height: 115px; object-fit: contain; }
+
+        .report-title-section { border-bottom: 2px solid #1e3a8a; padding-bottom: 5px; margin-bottom: 10px; }
+        .report-title { font-size: 16px; font-weight: 800; color: #1e3a8a; letter-spacing: 1px;}
+        
+        .program-name { text-align: center; font-size: 26px; font-weight: 800; color: #1e3a8a; margin-bottom: 15px; text-transform: uppercase; }
+
+        /* JADUAL DATA */
+        .data-row { display: flex; margin-bottom: 4px; }
+        .data-label {
+            width: 140px; background-color: #1e40af; color: white; font-weight: 600;
+            padding: 7px 10px; text-align: center; border-radius: 4px 0 0 4px; display: flex; align-items: center; justify-content: center; font-size: 12px;
+        }
+        .data-value {
+            flex: 1; background-color: #60a5fa; color: white; font-weight: 600; text-transform: uppercase;
+            padding: 7px 10px; text-align: center; margin-left: 2px; border-radius: 0 4px 4px 0; display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+
+        /* SEKSYEN GAMBAR */
+        .image-title { text-align: center; font-weight: 700; color: #1e3a8a; margin: 15px 0 8px 0; font-size: 13px;}
+        .images-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 6px; 
+        }
+        .images-grid img {
+            width: 100%; height: 90px; object-fit: cover; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px;
+        }
+
+        /* FOOTER */
+        .footer-text { font-weight: 700; font-size: 11px; color: #1e3a8a; margin-top: 20px; z-index: 2; position: relative; }
+
+        /* PRINT CONFIG */
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            html, body { width: 210mm; height: 297mm; background: white; margin: 0 !important; padding: 0 !important; overflow: hidden; }
+            .form-container { display: none; }
+            .preview-container { width: 210mm; height: 297mm; background: none; padding: 0; display: block; overflow: hidden; }
+            .a4-paper { box-shadow: none; padding: 15mm; margin: 0; width: 210mm; height: 297mm; max-height: 297mm; overflow: hidden; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h2>Borang OPR Dinamik</h2>
+        
+        <div class="form-group">
+            <label>Unit / Organisasi (Atas Kanan):</label>
+            <input type="text" value="PANITIA SAINS KOMPUTER" onkeyup="updateField('out-header-top', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Nama Program:</label>
+            <input type="text" value="PROGRAM KEPIMPINAN MUDA" onkeyup="updateField('out-program', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Sekolah:</label>
+            <input type="text" value="SM SAINS TUN SYED SHEH SHAHABUDIN" onkeyup="updateField('out-sekolah', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Tempat:</label>
+            <input type="text" value="DEWAN BESTARI" onkeyup="updateField('out-tempat', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Tarikh:</label>
+            <input type="text" value="20 MEI 2025" onkeyup="updateField('out-tarikh', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Jumlah Kehadiran:</label>
+            <input type="text" value="120 ORANG MURID" onkeyup="updateField('out-jumlah', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label>Objektif:</label>
+            <textarea rows="2" onkeyup="updateField('out-objektif', this.value)">MEMBINA JATI DIRI DAN SEMANGAT KERJASAMA BERPASUKAN</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Impak:</label>
+            <textarea rows="2" onkeyup="updateField('out-impak', this.value)">PENGAWAS LEBIH BERDISIPLIN DAN BERANI MENJALANKAN TUGAS</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Kekuatan:</label>
+            <textarea rows="2" onkeyup="updateField('out-kekuatan', this.value)">PENCERAMAH YANG BERPENGALAMAN DAN MODUL YANG MENARIK</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Kelemahan:</label>
+            <textarea rows="2" onkeyup="updateField('out-kelemahan', this.value)">MASA YANG TERHAD UNTUK AKTIVITI LUAR (LDK)</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Disediakan oleh:</label>
+            <input type="text" value="ROHIZATUL ASNI BINTI ISHAK" onkeyup="updateField('out-disediakan', this.value)">
+        </div>
+
+        <div class="form-group">
+            <label style="color: #2563eb;">Pilih Bilangan Gambar:</label>
+            <select id="image-count-select" onchange="changeImageCount(this.value)">
+                <option value="2">2 Keping Gambar</option>
+                <option value="4">4 Keping Gambar</option>
+                <option value="6">6 Keping Gambar</option>
+                <option value="8" selected>8 Keping Gambar (Asal)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Muat Naik / Drop Gambar:</label>
+            <div class="file-inputs">
+                <div class="drop-zone" id="zone1" onclick="document.getElementById('file1').click()">
+                    <span>Gambar 1</span>
+                    <input type="file" id="file1" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img1')">
+                </div>
+                <div class="drop-zone" id="zone2" onclick="document.getElementById('file2').click()">
+                    <span>Gambar 2</span>
+                    <input type="file" id="file2" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img2')">
+                </div>
+                <div class="drop-zone" id="zone3" onclick="document.getElementById('file3').click()">
+                    <span>Gambar 3</span>
+                    <input type="file" id="file3" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img3')">
+                </div>
+                <div class="drop-zone" id="zone4" onclick="document.getElementById('file4').click()">
+                    <span>Gambar 4</span>
+                    <input type="file" id="file4" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img4')">
+                </div>
+                <div class="drop-zone" id="zone5" onclick="document.getElementById('file5').click()">
+                    <span>Gambar 5</span>
+                    <input type="file" id="file5" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img5')">
+                </div>
+                <div class="drop-zone" id="zone6" onclick="document.getElementById('file6').click()">
+                    <span>Gambar 6</span>
+                    <input type="file" id="file6" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img6')">
+                </div>
+                <div class="drop-zone" id="zone7" onclick="document.getElementById('file7').click()">
+                    <span>Gambar 7</span>
+                    <input type="file" id="file7" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img7')">
+                </div>
+                <div class="drop-zone" id="zone8" onclick="document.getElementById('file8').click()">
+                    <span>Gambar 8</span>
+                    <input type="file" id="file8" class="hidden-input" accept="image/*" onchange="previewImage(event, 'img8')">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+    </div>
+
+    <div class="preview-container">
+        <div class="a4-paper">
+            <div class="shape-top-left-2"></div>
+            <div class="shape-top-left"></div>
+            <div class="shape-bottom-right"></div>
+
+            <div class="header-top" id="out-header-top">PANITIA SAINS KOMPUTER</div>
+            
+            <div class="logo-section">
+                <img id="out-logo" src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/115x115?text=logo.png'">
+            </div>
+
+            <div class="report-title-section">
+                <span class="report-title">ONE PAGE REPORT</span>
+            </div>
+
+            <div class="program-name" id="out-program">PROGRAM KEPIMPINAN MUDA</div>
+
+            <div class="data-row"><div class="data-label">Sekolah</div><div class="data-value" id="out-sekolah">SM SAINS TUN SYED SHEH SHAHABUDIN</div></div>
+            <div class="data-row"><div class="data-label">Tempat</div><div class="data-value" id="out-tempat">DEWAN BESTARI</div></div>
+            <div class="data-row"><div class="data-label">Tarikh</div><div class="data-value" id="out-tarikh">20 MEI 2025</div></div>
+            <div class="data-row"><div class="data-label">Jumlah murid yang hadir</div><div class="data-value" id="out-jumlah">120 ORANG MURID</div></div>
+            <div class="data-row"><div class="data-label">Objektif</div><div class="data-value" id="out-objektif">MEMBINA JATI DIRI DAN SEMANGAT KERJASAMA BERPASUKAN</div></div>
+            <div class="data-row"><div class="data-label">Impak</div><div class="data-value" id="out-impak">PENGAWAS LEBIH BERDISIPLIN DAN BERANI MENJALANKAN TUGAS</div></div>
+            <div class="data-row"><div class="data-label">Kekuatan</div><div class="data-value" id="out-kekuatan">PENCERAMAH YANG BERPENGALAMAN DAN MODUL YANG MENARIK</div></div>
+            <div class="data-row"><div class="data-label">Kelemahan</div><div class="data-value" id="out-kelemahan">MASA YANG TERHAD UNTUK AKTIVITI LUAR (LDK)</div></div>
+            <div class="data-row"><div class="data-label" style="background-color: #3b82f6;">Disediakan oleh</div><div class="data-value" id="out-disediakan">ROHIZATUL ASNI BINTI ISHAK</div></div>
+            
+            <div class="image-title">Gambar-gambar sepanjang program berlangsung</div>
+            <div class="images-grid" id="preview-grid">
+                <img id="img1" src="https://via.placeholder.com/150" alt="1">
+                <img id="img2" src="https://via.placeholder.com/150" alt="2">
+                <img id="img3" src="https://via.placeholder.com/150" alt="3">
+                <img id="img4" src="https://via.placeholder.com/150" alt="4">
+                <img id="img5" src="https://via.placeholder.com/150" alt="5">
+                <img id="img6" src="https://via.placeholder.com/150" alt="6">
+                <img id="img7" src="https://via.placeholder.com/150" alt="7">
+                <img id="img8" src="https://via.placeholder.com/150" alt="8">
+            </div>
+
+            <div class="footer-text">GREAT LEADERS EMPOWER OTHERS</div>
+        </div>
+    </div>
+
+    <script>
+        function updateField(id, value) {
+            document.getElementById(id).innerText = value;
+        }
+
+        function previewImage(event, id) {
+            var reader = new FileReader();
+            reader.onload = function(){
+                var output = document.getElementById(id);
+                output.src = reader.result;
+            };
+            if(event.target.files[0]){
+                reader.readAsDataURL(event.target.files[0]);
+                updateDropZoneText(event.target, "Dimuat naik ✓");
+            }
+        }
+
+        function updateDropZoneText(inputElement, text) {
+            const span = inputElement.parentElement.querySelector('span');
+            if(span) {
+                span.innerText = text;
+                span.style.color = "#16a34a";
+                span.style.fontWeight = "bold";
+            }
+        }
+
+        // FUNGSI UTAMA: MENUKAR JUMLAH GAMBAR SECARA DINAMIK
+        function changeImageCount(count) {
+            const num = parseInt(count);
+            
+            // 1. Tunjuk/Sembunyi kotak Drop Zone di borang kiri
+            for (let i = 1; i <= 8; i++) {
+                const zone = document.getElementById('zone' + i);
+                const img = document.getElementById('img' + i);
+                
+                if (i <= num) {
+                    zone.style.display = 'flex';
+                    img.style.display = 'block';
+                } else {
+                    zone.style.display = 'none';
+                    img.style.display = 'none';
+                }
+            }
+            
+            // 2. Ubah struktur grid & saiz gambar di A4 supaya sentiasa cantik
+            const grid = document.getElementById('preview-grid');
+            let imgHeight = "90px";
+            
+            if (num === 2) {
+                grid.style.gridTemplateColumns = "repeat(2, 1fr)";
+                imgHeight = "160px"; // Gambar lebih besar jika ada 2 sahaja
+            } else if (num === 4) {
+                grid.style.gridTemplateColumns = "repeat(2, 1fr)";
+                imgHeight = "120px"; // Susunan 2x2
+            } else if (num === 6) {
+                grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+                imgHeight = "105px"; // Susunan 3x2
+            } else if (num === 8) {
+                grid.style.gridTemplateColumns = "repeat(4, 1fr)";
+                imgHeight = "90px";  // Susunan asal 4x2
+            }
+            
+            // Aplikasikan ketinggian (height) baharu pada gambar yang aktif
+            for (let i = 1; i <= num; i++) {
+                document.getElementById('img' + i).style.height = imgHeight;
+            }
+        }
+
+        // Konfigurasi Drag and Drop & Initialization
+        document.addEventListener("DOMContentLoaded", () => {
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            // Set default mengikut pilihan '8 gambar' semasa mula buka page
+            changeImageCount(8);
+
+            dropZones.forEach((zone, index) => {
+                const fileInput = zone.querySelector('input[type="file"]');
+                const imgId = 'img' + (index + 1);
+
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('dragover');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('dragover');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+                    
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        fileInput.files = e.dataTransfer.files;
+                        
+                        var reader = new FileReader();
+                        reader.onload = function(){
+                            document.getElementById(imgId).src = reader.result;
+                        };
+                        reader.readAsDataURL(file);
+                        
+                        updateDropZoneText(fileInput, "Dimuat naik ✓");
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
