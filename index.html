@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Penjana OPR Dinamik</title>
+    <title>Penjana OPR Dinamik (5-8 Gambar Centre)</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
@@ -134,15 +134,20 @@
             padding: 7px 10px; text-align: center; margin-left: 2px; border-radius: 0 4px 4px 0; display: flex; align-items: center; justify-content: center; font-size: 14px;
         }
 
-        /* SEKSYEN GAMBAR */
+        /* SEKSYEN GAMBAR - DITUKAR KEPADA FLEXBOX */
         .image-title { text-align: center; font-weight: 700; color: #1e3a8a; margin: 15px 0 8px 0; font-size: 13px;}
         .images-grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; /* Kunci utama untuk ketengahkan gambar! */
             gap: 6px; 
         }
         .images-grid img {
-            width: 100%; height: 90px; object-fit: cover; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px;
+            box-sizing: border-box; /* Pastikan border tak ganggu lebar */
+            object-fit: cover; 
+            background-color: #f1f5f9; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 4px;
         }
 
         /* FOOTER */
@@ -166,7 +171,7 @@
         
         <div class="form-group">
             <label>Unit / Organisasi (Atas Kanan):</label>
-            <input type="text" value="PANITIA SAINS KOMPUTER" onkeyup="updateField('out-header-top', this.value)">
+            <input type="text" value="PANITIA" onkeyup="updateField('out-header-top', this.value)">
         </div>
 
         <div class="form-group">
@@ -216,16 +221,16 @@
 
         <div class="form-group">
             <label>Disediakan oleh:</label>
-            <input type="text" value="ROHIZATUL ASNI BINTI ISHAK" onkeyup="updateField('out-disediakan', this.value)">
+            <input type="text" value="NURHUSNA AUNI" onkeyup="updateField('out-disediakan', this.value)">
         </div>
 
         <div class="form-group">
-            <label style="color: #2563eb;">Pilih Bilangan Gambar:</label>
+            <label style="color: #2563eb;">Pilih Bilangan Gambar (Min: 5, Max: 8):</label>
             <select id="image-count-select" onchange="changeImageCount(this.value)">
-                <option value="2">2 Keping Gambar</option>
-                <option value="4">4 Keping Gambar</option>
+                <option value="5">5 Keping Gambar</option>
                 <option value="6">6 Keping Gambar</option>
-                <option value="8" selected>8 Keping Gambar (Asal)</option>
+                <option value="7">7 Keping Gambar</option>
+                <option value="8" selected>8 Keping Gambar (Maksimum)</option>
             </select>
         </div>
 
@@ -276,7 +281,7 @@
             <div class="shape-top-left"></div>
             <div class="shape-bottom-right"></div>
 
-            <div class="header-top" id="out-header-top">PANITIA SAINS KOMPUTER</div>
+            <div class="header-top" id="out-header-top">PANITIA</div>
             
             <div class="logo-section">
                 <img id="out-logo" src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/115x115?text=logo.png'">
@@ -296,7 +301,7 @@
             <div class="data-row"><div class="data-label">Impak</div><div class="data-value" id="out-impak">PENGAWAS LEBIH BERDISIPLIN DAN BERANI MENJALANKAN TUGAS</div></div>
             <div class="data-row"><div class="data-label">Kekuatan</div><div class="data-value" id="out-kekuatan">PENCERAMAH YANG BERPENGALAMAN DAN MODUL YANG MENARIK</div></div>
             <div class="data-row"><div class="data-label">Kelemahan</div><div class="data-value" id="out-kelemahan">MASA YANG TERHAD UNTUK AKTIVITI LUAR (LDK)</div></div>
-            <div class="data-row"><div class="data-label" style="background-color: #3b82f6;">Disediakan oleh</div><div class="data-value" id="out-disediakan">ROHIZATUL ASNI BINTI ISHAK</div></div>
+            <div class="data-row"><div class="data-label" style="background-color: #3b82f6;">Disediakan oleh</div><div class="data-value" id="out-disediakan">NURHUSNA AUNI</div></div>
             
             <div class="image-title">Gambar-gambar sepanjang program berlangsung</div>
             <div class="images-grid" id="preview-grid">
@@ -340,11 +345,11 @@
             }
         }
 
-        // FUNGSI UTAMA: MENUKAR JUMLAH GAMBAR SECARA DINAMIK
+        // LOGIK BAHARU (FLEXBOX CALCULATION)
         function changeImageCount(count) {
             const num = parseInt(count);
             
-            // 1. Tunjuk/Sembunyi kotak Drop Zone di borang kiri
+            // Sembunyi / Tunjuk kotak dan gambar
             for (let i = 1; i <= 8; i++) {
                 const zone = document.getElementById('zone' + i);
                 const img = document.getElementById('img' + i);
@@ -358,27 +363,24 @@
                 }
             }
             
-            // 2. Ubah struktur grid & saiz gambar di A4 supaya sentiasa cantik
-            const grid = document.getElementById('preview-grid');
             let imgHeight = "90px";
+            let imgWidth = "calc((100% - 18px) / 4)"; // Lebar asal untuk 4 lajur (tolak 3 x gap 6px)
             
-            if (num === 2) {
-                grid.style.gridTemplateColumns = "repeat(2, 1fr)";
-                imgHeight = "160px"; // Gambar lebih besar jika ada 2 sahaja
-            } else if (num === 4) {
-                grid.style.gridTemplateColumns = "repeat(2, 1fr)";
-                imgHeight = "120px"; // Susunan 2x2
-            } else if (num === 6) {
-                grid.style.gridTemplateColumns = "repeat(3, 1fr)";
-                imgHeight = "105px"; // Susunan 3x2
-            } else if (num === 8) {
-                grid.style.gridTemplateColumns = "repeat(4, 1fr)";
-                imgHeight = "90px";  // Susunan asal 4x2
+            if (num === 5 || num === 6) {
+                // Konsep 3 gambar di baris pertama
+                imgWidth = "calc((100% - 12px) / 3)"; // Lebar untuk 3 lajur (tolak 2 x gap 6px)
+                imgHeight = "110px";
+            } else if (num === 7 || num === 8) {
+                // Konsep 4 gambar di baris pertama
+                imgWidth = "calc((100% - 18px) / 4)"; 
+                imgHeight = num === 7 ? "95px" : "90px";
             }
             
-            // Aplikasikan ketinggian (height) baharu pada gambar yang aktif
+            // Terapkan kelebaran dan ketinggian pada setiap gambar yang terpapar
             for (let i = 1; i <= num; i++) {
-                document.getElementById('img' + i).style.height = imgHeight;
+                const img = document.getElementById('img' + i);
+                img.style.height = imgHeight;
+                img.style.width = imgWidth;
             }
         }
 
@@ -386,7 +388,6 @@
         document.addEventListener("DOMContentLoaded", () => {
             const dropZones = document.querySelectorAll('.drop-zone');
 
-            // Set default mengikut pilihan '8 gambar' semasa mula buka page
             changeImageCount(8);
 
             dropZones.forEach((zone, index) => {
